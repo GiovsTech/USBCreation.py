@@ -46,7 +46,7 @@ class ISO():
         self.os = platform
         self.iso_path = image
 
-    def write(self, disk, block_size=410241024):
+    def write(self, disk, block_size=4096):
         iso_size = os.path.getsize(self.iso_path)
         bytes_written = 0
         if "linux" in self.os or "darwin" in self.os:
