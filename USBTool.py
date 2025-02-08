@@ -38,6 +38,9 @@ class USB():
             self.wipe_dev(partition)
         self.wipe_dev(self.path)
 
+
+### TODO: WINDOWS COMPATIBILITY: WRITE METHOD FOR ISO CLASS FOR WINDOWS
+
 class ISO():
     def __init__(self, image):
         self.os = platform
@@ -57,17 +60,18 @@ class ISO():
                         bytes_written += len(data)
 
                         progress = (bytes_written / iso_size) * 100
-                        print(f"\rProgress: {progress:5.2f}%", end='', flush=True)
+                        print(f"\r Progress: {progress:5.2f}%", end='', flush=True)
 
                     out.flush()
                     os.fsync(out.fileno())
+        return 0
+
 
 if __name__ == "__main__":
     disk = "/dev/sde"
     a = USB(disk)
     a.wipe()
     a.partition()
-  # Logic test
-    iso_file= "/home/giovs/Gianni/VM/ISO/debian-12.9.0-amd64-netinst.iso"
+    iso_file= "debian-12.9.0-amd64-netinst.iso"
     b = ISO(iso_file)
     b.write(disk)

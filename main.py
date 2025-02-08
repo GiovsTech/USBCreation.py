@@ -1,7 +1,16 @@
 import argparse
-from USBTool import USB, ISO
-import os
-import subprocess
+from USBTool import USB, ISO, glob, platform, os
+
+
+## TODO: GUI DEVELOPMENT
+
+
+####    ######
+#         ##
+#  ###    ##
+#####     ##
+
+
 # Parser Constants
 parser = argparse.ArgumentParser(
     prog='USBCreationTool.py',
@@ -18,7 +27,6 @@ parser.add_argument('-g', '--gui', action='store_true', help="Launch the GUI ins
 args = parser.parse_args()
 
 
-
 # Behaviour of the program
 def flash_iso_to_usb(iso_path, usb_path):
     try:
@@ -33,24 +41,34 @@ def flash_iso_to_usb(iso_path, usb_path):
             usb.partition()
             print(" ")
             print(" Flashing ISO file into the USB drive...")
+            print(" ")
             iso.write(usb_path)
+        else:
+            print(" ISO or USB PATH you provided doesn't exist. Please provide a good one.")
+            return 1
     except Exception as e:
         print(f"It wasn't possibile to flash your iso image into your usb drive.\n Error: {e}")
 
-# def list_available_disks():
-#
-#     listdrives = subprocess.Popen('', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-#     listdrivesout, err = listdrives.communicate()
-#
-#     lines = listdrivesout.decode('utf-8').splitlines()
-#
-#     disks = [line for line in lines if "/dev/" in line]
-#
-#     print(disks)
 
+
+## TODO: WINDOWS SUPPORT
+def list_available_disks():
+    device_pattern = "/dev/sd*" if "linux" in platform else "NONE"
+    disks = glob(device_pattern)
+    print(" ")
+    print(" All available storage devices: ")
+    print(" ")
+    for d in disks:
+        print(f"{d}\n")
+
+
+
+
+
+## START OF THE PROGRAM
 
 if args.action == "flash":
     flash_iso_to_usb(args.iso_path, args.disk_path)
-# elif args.action == "list":
-#     list_available_disks()
+elif args.action == "list":
+    list_available_disks()
 
