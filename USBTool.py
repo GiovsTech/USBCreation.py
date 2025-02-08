@@ -1,6 +1,5 @@
 import os
 from sys import platform
-import tempfile
 import parted
 from glob import glob
 
@@ -47,7 +46,7 @@ class ISO():
     def write(self, disk, block_size=410241024):
         iso_size = os.path.getsize(self.iso_path)
         bytes_written = 0
-        if self.os == "linux" or self.os == "linux2" or self.os == "darwin":
+        if "linux" in self.os or "darwin" in self.os:
             with open(self.iso_path, "rb") as inp:
                 with open(disk, "wb", buffering=0) as out:
                     while True:
@@ -68,7 +67,7 @@ if __name__ == "__main__":
     a = USB(disk)
     a.wipe()
     a.partition()
-
+  # Logic test
     iso_file= "/home/giovs/Gianni/VM/ISO/debian-12.9.0-amd64-netinst.iso"
     b = ISO(iso_file)
     b.write(disk)
