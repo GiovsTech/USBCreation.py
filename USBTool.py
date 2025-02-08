@@ -2,39 +2,73 @@ import os
 from sys import platform
 import tempfile
 import parted
-import subprocess
+from glob import glob
 
-class USBTool():
-    def __init__(self):
+
+class USB():
+    def __init__(self, path):
+        self.path = path
+
+    @property
+    def partition_names(self):
+        names = glob("{}[0-9]*".format(self.path))
+        return names
+
+    def partition(self):
+        device = parted.getDevice(self.path)
+        disk = parted.freshDisk(device, "msdos")
+        geometry = parted.Geometry(
+            device=device, start=1, length=device.getLength() - 1
+        )
+        filesystem = parted.FileSystem(type="fat32", geometry=geometry)
+        partition = parted.Partition(
+            disk=disk, type=parted.PARTITION_NORMAL, fs=filesystem, geometry=geometry
+        )
+        disk.addPartition(
+            partition=partition, constraint=device.optimalAlignedConstraint
+        )
+        partition.setFlag(parted.PARTITION_BOOT)
+        disk.commit()
+
+    def wipe_dev(self, dev_path):
+        with open(dev_path, "wb") as p:
+            p.write(bytearray(1024))
+
+    def wipe(self):
+        for partition in self.partition_names:
+            self.wipe_dev(partition)
+        self.wipe_dev(self.path)
+
+class ISO():
+    def __init__(self, image):
         self.os = platform
-        temp_dir = tempfile.TemporaryDirectory()
-        ISO_DIR = os.makedirs(temp_dir.name + "/ISO")
-        USB_DIR = os.makedirs(temp_dir.name + "/USB")
-        self.iso_path = temp_dir.name + "/ISO"
-        self.usb_path = temp_dir.name + "/USB"
-    def check_file(self):
-        return len(os.listdir(self.iso_path)) != 0 and len(os.listdir(self.usb_path)) != 0
-    def secure_clean(self, device):
-        if self.os == "linux" or "linux2":
-            format_data = f"dd if=/dev/urandom of={device} bs=4096"
-        elif self.os == "win32":
-            pass
-        elif self.os == "darwin":
-            pass
-        else:
-            print("Your system is not supported by this program yet.")
-        try:
-            subprocess.run(format_data, shell=True, check=True)
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"Something was wrong while formatting disk. Error:\n{e} ")
-    def partition_disk(self, device):
-        device = parted.Device(device)
+        self.iso_path = image
 
-    def iso_mount(self, iso_file):
-        pass
-    def injection(self):
-        pass
+    def write(self, disk, block_size=410241024):
+        iso_size = os.path.getsize(self.iso_path)
+        bytes_written = 0
+        if self.os == "linux" or self.os == "linux2" or self.os == "darwin":
+            with open(self.iso_path, "rb") as inp:
+                with open(disk, "wb", buffering=0) as out:
+                    while True:
+                        data = inp.read(block_size)
+                        if not data:
+                            break
+                        out.write(data)
+                        bytes_written += len(data)
+
+                        progress = (bytes_written / iso_size) * 100
+                        print(f"\rProgress: {progress:5.2f}%", end='', flush=True)
+
+                    out.flush()
+                    os.fsync(out.fileno())
 
 if __name__ == "__main__":
-    a = USBTool()
+    disk = "/dev/sde"
+    a = USB(disk)
+    a.wipe()
+    a.partition()
+
+    iso_file= "/home/giovs/Gianni/VM/ISO/debian-12.9.0-amd64-netinst.iso"
+    b = ISO(iso_file)
+    b.write(disk)
